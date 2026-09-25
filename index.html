@@ -57,19 +57,6 @@ select,input{width:100%;padding:13px;border-radius:12px;border:1px solid #343a40
 .toast.show{display:block}
 .hidden{display:none}
 </style>
-
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SUPABASE_URL = 'https://qumwaizimhlucnqyshbu.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9JkI1dljRX-vBQ5iNWFQMQ_AlBZupZ8';
-
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
-</script>
-
 </head>
 <body>
 <div class="app">
@@ -149,28 +136,17 @@ const supabaseClient = window.supabase.createClient(
 <div class="modal" id="bookingModal" onclick="if(event.target===this)closeBooking()">
   <div class="sheet">
     <h2>Agendar horário</h2>
-
     <label>Seu nome</label>
     <input id="clientName" type="text" placeholder="Digite seu nome" autocomplete="name">
-
     <label>Telefone</label>
     <input id="clientPhone" type="tel" placeholder="(11) 99999-9999" autocomplete="tel">
-
     <label>Serviço</label>
-    <select id="service">
-      <option>Corte de cabelo — R$ 35,00</option>
-      <option>Barba — R$ 30</option>
-      <option>Corte + Barba — R$ 60</option>
-      <option>Sobrancelha — R$ 20</option>
-    </select>
-
+    <select id="service"><option>Corte de cabelo — R$ 35,00</option><option>Barba — R$ 30</option><option>Corte + Barba — R$ 60</option><option>Sobrancelha — R$ 20</option></select>
     <label>Data</label>
     <input id="date" type="date">
-
     <label>Horário</label>
     <div class="times" id="times"></div>
-
-    <button id="confirmBookingBtn" class="btn primary" style="width:100%;margin-top:16px" onclick="confirmBooking()">Confirmar agendamento</button>
+    <button class="btn primary" style="width:100%;margin-top:16px" onclick="confirmBooking()">Confirmar agendamento</button>
     <button class="btn secondary" style="width:100%;margin-top:8px" onclick="closeBooking()">Voltar</button>
   </div>
 </div>
@@ -185,123 +161,74 @@ const supabaseClient = window.supabase.createClient(
 </nav>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = 'https://qumwaizimhlucnqyshbu.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9JkI1dljRX-vBQ5iNWFQMQ_AlBZupZ8';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
 const times = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","14:00","14:30","15:00","15:30","16:00"];
 let selectedTime = "";
-
 function openBooking(){
   document.getElementById('bookingModal').classList.add('show');
-
-  const d = new Date();
-  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   document.getElementById('date').value = d.toISOString().slice(0,10);
-
-  // Reaproveita os dados do cliente neste aparelho, sem enviar nada para outro serviço.
-  try {
-    document.getElementById('clientName').value = localStorage.getItem('gleison_cliente_nome') || "";
-    document.getElementById('clientPhone').value = localStorage.getItem('gleison_cliente_telefone') || "";
-  } catch(e) {}
-
-  selectedTime = "";
   renderTimes();
 }
-
-function closeBooking(){
-  document.getElementById('bookingModal').classList.remove('show');
-}
-
+function closeBooking(){document.getElementById('bookingModal').classList.remove('show')}
 function renderTimes(){
-  document.getElementById('times').innerHTML = times.map(t =>
-    `<div class="time ${t===selectedTime?'active':''}" onclick="selectTime('${t}')">${t}</div>`
-  ).join("");
+  document.getElementById('times').innerHTML = times.map(t => `<div class="time ${t===selectedTime?'active':''}" onclick="selectTime('${t}')">${t}</div>`).join("");
 }
-
-function selectTime(t){
-  selectedTime=t;
-  renderTimes();
-}
-
-function normalizePhone(phone){
-  return phone.replace(/\D/g, "");
-}
+function selectTime(t){selectedTime=t;renderTimes()}
 
 async function confirmBooking(){
-  const name = document.getElementById('clientName').value.trim();
-  const phone = normalizePhone(document.getElementById('clientPhone').value);
-  const service = document.getElementById('service').value;
-  const date = document.getElementById('date').value;
-  const btn = document.getElementById('confirmBookingBtn');
+  const nome = document.getElementById('clientName').value.trim();
+  const telefone = document.getElementById('clientPhone').value.trim();
+  const servico = document.getElementById('service').value;
+  const data = document.getElementById('date').value;
 
-  if(!name){
-    showToast("Digite seu nome.");
-    return;
-  }
+  if(!nome){showToast("Digite seu nome.");return}
+  if(!telefone){showToast("Digite seu telefone.");return}
+  if(!data){showToast("Escolha a data.");return}
+  if(!selectedTime){showToast("Escolha um horário.");return}
 
-  if(phone.length < 10){
-    showToast("Digite um telefone válido.");
-    return;
-  }
-
-  if(!date){
-    showToast("Escolha a data.");
-    return;
-  }
-
-  if(!selectedTime){
-    showToast("Escolha um horário.");
-    return;
-  }
-
-  const dataHora = `${date}T${selectedTime}:00`;
-
-  btn.disabled = true;
-  btn.textContent = "Salvando...";
+  const dataHora = `${data}T${selectedTime}:00`;
+  const botao = document.querySelector('#bookingModal .btn.primary');
+  botao.disabled = true;
+  botao.textContent = 'Salvando...';
 
   try {
-    // Salva cliente + agendamento de uma vez pela função do Supabase.
-    // Isso evita depender de uma política SELECT para recuperar o ID do cliente.
-    const { data: agendamentoId, error: agendamentoError } = await supabaseClient
-      .rpc('criar_agendamento', {
-        p_nome: name,
-        p_telefone: phone,
-        p_data_hora: dataHora,
-        p_observacoes: `Serviço: ${service}`
-      });
+    const { data: resultado, error } = await supabaseClient.rpc('criar_agendamento', {
+      p_nome: nome,
+      p_telefone: telefone,
+      p_data_hora: dataHora,
+      p_observacoes: servico
+    });
 
-    if(agendamentoError) throw agendamentoError;
-    if(!agendamentoId) throw new Error('O Supabase não retornou o ID do agendamento.');
-
-    try {
-      localStorage.setItem('gleison_cliente_nome', name);
-      localStorage.setItem('gleison_cliente_telefone', phone);
-    } catch(e) {}
+    if(error) throw error;
 
     closeBooking();
-    showToast("Agendamento salvo com sucesso! " + selectedTime);
-    selectedTime = "";
-
+    showToast('Agendamento salvo com sucesso para ' + selectedTime + '!');
+    selectedTime = '';
+    document.getElementById('clientName').value = '';
+    document.getElementById('clientPhone').value = '';
+    renderTimes();
   } catch(error) {
-    console.error("Erro ao salvar agendamento:", error);
-    showToast("Não foi possível salvar. Tente novamente.");
+    console.error('Erro ao salvar agendamento:', error);
+    showToast('Não foi possível salvar. Tente novamente.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Confirmar agendamento";
+    botao.disabled = false;
+    botao.textContent = 'Confirmar agendamento';
   }
 }
 
 function showToast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg;
-  el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),3000);
+  const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2600);
 }
-
 function tab(id,btn){
-  ['home','agenda','perfil','barbearia'].forEach(x =>
-    document.getElementById(x).classList.toggle('hidden',x!==id)
-  );
-  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
-  btn.classList.add('active');
+  ['home','agenda','perfil','barbearia'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 </script>
