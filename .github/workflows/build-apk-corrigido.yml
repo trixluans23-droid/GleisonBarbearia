@@ -20,7 +20,7 @@ jobs:
 
       - name: Atualizar index.html
         run: |
-          cp index_supabase_corrigido.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          cp index_supabase_horarios_corrigido.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
 
       - name: Configurar Java
         uses: actions/setup-java@v4
