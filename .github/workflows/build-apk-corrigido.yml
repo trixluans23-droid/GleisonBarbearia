@@ -1,0 +1,50 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Descompactar projeto Android
+        run: |
+          unzip -o "GleisonBarbearia_Android_Projeto (2).zip"
+          PROJECT_DIR="$(dirname "$(find . -type f -name settings.gradle -not -path './.git/*' | head -n 1)")"
+          mv "$PROJECT_DIR" GleisonBarbeariaAndroid
+          ls -la GleisonBarbeariaAndroid
+
+      - name: Atualizar index.html
+        run: |
+          cp index_supabase_corrigido.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Aceitar licenças
+        run: yes | sdkmanager --licenses || true
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Compilar APK
+        working-directory: GleisonBarbeariaAndroid
+        run: gradle assembleDebug
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: GleisonBarbearia-debug-apk
+          path: GleisonBarbeariaAndroid/app/build/outputs/apk/debug/app-debug.apk
