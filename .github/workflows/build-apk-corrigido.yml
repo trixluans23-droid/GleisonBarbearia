@@ -13,14 +13,18 @@ jobs:
 
       - name: Descompactar projeto Android
         run: |
-          unzip -o "GleisonBarbearia_Android_Projeto (2).zip"
-          PROJECT_DIR="$(dirname "$(find . -type f -name settings.gradle -not -path './.git/*' | head -n 1)")"
+          unzip -o "GleisonBarbearia_Android Projeto (2).zip" -d projeto_extraido
+          PROJECT_DIR="$(dirname "$(find projeto_extraido -type f -name settings.gradle | head -n 1)")"
           mv "$PROJECT_DIR" GleisonBarbeariaAndroid
           ls -la GleisonBarbeariaAndroid
 
       - name: Atualizar index.html
         run: |
           cp index_supabase_horarios_corrigido.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
+
+      - name: Permitir internet no Android
+        run: |
+          sed -i '/<manifest /a\    <uses-permission android:name="android.permission.INTERNET"/>' GleisonBarbeariaAndroid/app/src/main/AndroidManifest.xml
 
       - name: Configurar Java
         uses: actions/setup-java@v4
