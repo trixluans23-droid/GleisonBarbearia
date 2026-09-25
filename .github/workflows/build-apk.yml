@@ -13,7 +13,7 @@ jobs:
 
       - name: Descompactar projeto Android
         run: |
-          unzip -o GleisonBarbearia_Android_Projeto.zip
+          unzip -o GleisonBarbearia_Android_Projeto (2).zip
           ls -la GleisonBarbeariaAndroid
 
       - name: Configurar Java
