@@ -14,7 +14,8 @@ jobs:
       - name: Descompactar projeto Android
         run: |
           unzip -o "GleisonBarbearia_Android_Projeto (2).zip"
-          mv "GleisonBarbearia_Android_Projeto (2)/GleisonBarbeariaAndroid" GleisonBarbeariaAndroid
+          PROJECT_DIR="$(dirname "$(find . -type f -name settings.gradle -not -path './.git/*' | head -n 1)")"
+          mv "$PROJECT_DIR" GleisonBarbeariaAndroid
           ls -la GleisonBarbeariaAndroid
 
       - name: Configurar Java
