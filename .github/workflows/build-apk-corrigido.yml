@@ -13,7 +13,9 @@ jobs:
 
       - name: Descompactar projeto Android
         run: |
-          unzip -o "GleisonBarbearia_Android_Projeto.zip" -d projeto_extraido
+          ZIP_FILE="$(find . -maxdepth 2 -type f -name '*.zip' | head -n 1)"
+          echo "ZIP encontrado: $ZIP_FILE"
+          unzip -o "$ZIP_FILE" -d projeto_extraido
           PROJECT_DIR="$(dirname "$(find projeto_extraido -type f -name settings.gradle | head -n 1)")"
           mv "$PROJECT_DIR" GleisonBarbeariaAndroid
           ls -la GleisonBarbeariaAndroid
