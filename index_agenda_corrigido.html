@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#08090b">
+<title>Gleison Barbearia</title>
+</head>
+<body style="margin:0;background:#050607;color:#fff;font-family:Arial,sans-serif">
+<div id="carregando" style="padding:30px;text-align:center">Carregando Gleison Barbearia...</div>
+
+<script>
+(async function(){
+  const originalUrl =
+    "https://raw.githubusercontent.com/trixluans23-droid/GleisonBarbearia/refs/heads/main/index_supabase_agenda_ocupados.html";
+
+  try {
+    const r = await fetch(originalUrl + "?v=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) throw new Error("Erro ao carregar o aplicativo.");
+    let html = await r.text();
+
+    // Corrige openBooking sem alterar o restante do aplicativo.
+    const antigo = `async function openBooking(){
+  document.getElementById('bookingModal').classList.add('show');
+  const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  document.getElementById('date').value = d.toISOString().slice(0,10);
+  selectedTime = "";
+  await loadOccupiedTimes();
+  renderTimes();
+  setTimeout(renderTimes, 50);
+}`;
+
+    const novo = `async function openBooking(){
+  document.getElementById('bookingModal').classList.add('show');
+
+  const dateInput = document.getElementById('date');
+
+  // Só define hoje quando ainda não existe uma data escolhida.
+  if(!dateInput.value){
+    const d = new Date();
+    d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+    dateInput.value = d.toISOString().slice(0,10);
+  }
+
+  selectedTime = "";
+  await loadOccupiedTimes();
+  renderTimes();
+}`;
+
+    if (html.includes(antigo)) {
+      html = html.replace(antigo, novo);
+    } else {
+      throw new Error("O código openBooking não foi encontrado na versão atual.");
+    }
+
+    // Evita datas anteriores a hoje, sem mexer na data escolhida.
+    html = html.replace(
+      '<input id="date" type="date">',
+      '<input id="date" type="date" min="' + new Date().toISOString().slice(0,10) + '">'
+    );
+
+    document.open();
+    document.write(html);
+    document.close();
+
+  } catch (e) {
+    document.body.innerHTML =
+      '<div style="padding:30px;text-align:center;color:#f2c766">' +
+      '<b>Não foi possível carregar a barbearia.</b><br><br>' +
+      e.message +
+      '</div>';
+  }
+})();
+</script>
+</body>
+</html>
