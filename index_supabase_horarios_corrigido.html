@@ -103,11 +103,16 @@ select,input{width:100%;padding:13px;border-radius:12px;border:1px solid #343a40
 </main>
 
 <section id="agenda" class="section hidden">
-  <div class="sectionTitle"><h2>Minha agenda</h2></div>
-  <div class="list">
-    <div class="card"><div class="small">Hoje • 09:00</div><b>Corte de cabelo</b><div class="small">Com Gleison</div><span class="badge">Confirmado</span></div>
-    <div class="card"><div class="small">Amanhã • 14:00</div><b>Corte + Barba</b><div class="small">Com Gleison</div><span class="small">Agendado</span></div>
+  <div class="sectionTitle">
+    <h2>Agenda</h2>
+    <button class="btn secondary" style="padding:8px 10px;font-size:12px" onclick="carregarAgenda()">Atualizar</button>
   </div>
+  <div class="card" style="margin-bottom:10px">
+    <label style="margin-top:0">Escolha a data</label>
+    <input id="agendaDate" type="date" onchange="carregarAgenda()">
+  </div>
+  <div id="agendaStatus" class="small" style="margin:8px 2px 10px">Carregando...</div>
+  <div id="agendaList" class="list"></div>
 </section>
 
 <section id="perfil" class="section hidden">
@@ -239,10 +244,80 @@ function showToast(msg){
   const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),2600);
 }
+
+function dataLocalHoje(){
+  const d=new Date();
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+function formatarHora(dataHora){
+  const d=new Date(dataHora);
+  return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function formatarData(data){
+  const partes=data.split('-');
+  return partes[2]+'/'+partes[1]+'/'+partes[0];
+}
+function statusTexto(status){
+  const mapa={agendado:'Agendado',confirmado:'Confirmado',atendido:'Atendido',cancelado:'Cancelado',faltou:'Faltou'};
+  return mapa[status] || status || 'Agendado';
+}
+
+async function carregarAgenda(){
+  const input=document.getElementById('agendaDate');
+  const lista=document.getElementById('agendaList');
+  const status=document.getElementById('agendaStatus');
+  if(!input || !lista || !status) return;
+  if(!input.value) input.value=dataLocalHoje();
+  const inicio=input.value+'T00:00:00';
+  const fim=input.value+'T23:59:59';
+  lista.innerHTML='';
+  status.textContent='Carregando agendamentos...';
+  try{
+    const {data,error}=await supabaseClient
+      .from('agendamentos')
+      .select('id,data_hora,status,observacoes,clientes(nome,telefone)')
+      .gte('data_hora',inicio)
+      .lte('data_hora',fim)
+      .order('data_hora',{ascending:true});
+    if(error) throw error;
+    if(!data || data.length===0){
+      status.textContent='Nenhum agendamento para '+formatarData(input.value)+'.';
+      return;
+    }
+    status.textContent=data.length+' agendamento(s) em '+formatarData(input.value)+'.';
+    data.forEach(function(item){
+      const cliente=item.clientes || {};
+      const servico=item.observacoes || 'Serviço não informado';
+      const card=document.createElement('div');
+      card.className='card';
+      card.innerHTML=`
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-size:22px;font-weight:900;color:var(--gold2)">${formatarHora(item.data_hora)}</div>
+          <span class="badge">${statusTexto(item.status)}</span>
+        </div>
+        <div style="margin-top:10px;font-size:17px;font-weight:800">${servico}</div>
+        <div class="small" style="margin-top:7px">👤 ${cliente.nome || 'Cliente'}</div>
+        <div class="small" style="margin-top:4px">📱 ${cliente.telefone || 'Telefone não informado'}</div>
+      `;
+      lista.appendChild(card);
+    });
+  }catch(error){
+    console.error('Erro ao carregar agenda:',error);
+    status.textContent='Não foi possível carregar a agenda.';
+    showToast('Erro ao carregar a agenda.');
+  }
+}
+
 function tab(id,btn){
   ['home','agenda','perfil','barbearia'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
   document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
+  if(id==='agenda'){
+    const input=document.getElementById('agendaDate');
+    if(input && !input.value) input.value=dataLocalHoje();
+    carregarAgenda();
+  }
 }
 </script>
 </body>
