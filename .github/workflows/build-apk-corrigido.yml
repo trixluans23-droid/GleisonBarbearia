@@ -22,7 +22,7 @@ jobs:
 
       - name: Atualizar index.html
         run: |
-          cp index_supabase_agenda_real.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
+          cp index_supabase_agenda_ocupados.html GleisonBarbeariaAndroid/app/src/main/assets/index.html
 
       - name: Permitir internet no Android
         run: |
